@@ -73,12 +73,11 @@ public class DOMParser
     private void parseDocument(){
         Element docEle = dom.getDocumentElement();
 
+        // Look for parent nodes in document tree
         NodeList moviesList = docEle.getElementsByTagName("directorfilms");
         NodeList actorsList = docEle.getElementsByTagName("actor");
         NodeList castList = docEle.getElementsByTagName("filmc");
-//        System.out.println(moviesList.getLength());
-//        System.out.println(actorsList.getLength());
-//        System.out.println(castList.getLength());
+
         if(moviesList != null && moviesList.getLength() > 0) {
             importDataType = "movies";
             addToContentList(moviesList);
@@ -96,6 +95,7 @@ public class DOMParser
         for(int i = 0 ; i < parentList.getLength();i++) {
             Element el = (Element)parentList.item(i);
             HashMap<String, String> newElement;
+            // TODO: replace case contents with actual functions for retrieving tag data
             switch (importDataType) {
                 case "movies":
                     newElement = getMovie(el);
@@ -140,7 +140,7 @@ public class DOMParser
 
     public static void main(String[] args){
         try {
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
+            //Class.forName("com.mysql.jdbc.Driver").newInstance();
             DOMParser dpe = new DOMParser();
             dpe.runParser();
         }
