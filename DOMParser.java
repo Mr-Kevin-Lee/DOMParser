@@ -32,7 +32,7 @@ public class DOMParser
     List xmlContent;
     Document dom;
     String importDataType = "";
-
+    private static Connection connection = null;
 
     public DOMParser(){
         //create a list to hold the employee objects
@@ -40,13 +40,15 @@ public class DOMParser
     }
 
     public void runParser() {
-
-        parseXmlFile();
-        parseDocument();
-
-        // todo: replace this step with one that adds items to appropriate database
-        //printData();
-
+        try {
+            connection = DriverManager.getConnection("jdbc:mysql:///moviedb", "root", "122b");
+            parseXmlFile();
+            parseDocument();
+            addToDatabase();
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+        }
     }
 
 
@@ -82,14 +84,6 @@ public class DOMParser
             importDataType = "movies";
             addToContentList(moviesList);
         }
-//        else if (actorsList != null && actorsList.getLength() > 0) {
-//            importDataType = "actors";
-//            addToContentList(actorsList);
-//        }
-//        else {
-//            importDataType = "cast";
-//            addToContentList(castList);
-//        }
     }
 
     private void addToContentList(NodeList parentList) {
@@ -102,12 +96,6 @@ public class DOMParser
                     case "movies":
                         newElement = getMovie(el);
                         break;
-//                case "actors":
-//                    newElement = getMovie(el);
-//                    break;
-//                case "cast":
-//                    newElement = getMovie(el);
-//                    break;
                     default:
                         newElement = getMovie(el);
                         break;
@@ -115,7 +103,7 @@ public class DOMParser
                 xmlContent.add(newElement);
             }
         }
-        //System.out.println(xmlContent);
+        System.out.println(xmlContent);
     }
 
     private HashMap<String, String> getMovie (Element element) {
@@ -151,18 +139,36 @@ public class DOMParser
         return textVal;
     }
 
-    private int getIntValue(Element ele, String tagName) {
-        //in production application you would catch the exception
-        String textValue = getTextValue(ele, tagName);
-        if (textValue != null)
-            return Integer.parseInt(textValue);
-        else
-            return -1;
+    public void addToDatabase() {
+        try {
+            switch (importDataType) {
+                case "movies":
+                    String insertString = (
+                            "INSERT INTO movies (title, year, director) " +
+                                    "VALUES (?, ?, ?)"
+                    );
+                    // iterate through xmlContent
+                    for (int i = 0; i < xmlContent.size(); i++) {
+                        PreparedStatement insertFilm = connection.prepareStatement(insertString);
+//                        HashMap<String, String> filmItem = xmlContent.get(i);
+/*                    insertFilm.setString(0, xmlContent.get(i)["title"]);
+                    insertFilm.setString(1, xmlContent.get(i)["year"]);
+                    insertFilm.setString(2, xmlContent.get(i)["director"]);*/
+                        System.out.println(insertFilm);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        catch (SQLException e) {
+            System.out.println(e);
+        }
     }
 
     public static void main(String[] args){
         try {
-            //Class.forName("com.mysql.jdbc.Driver").newInstance();
+            Class.forName("com.mysql.jdbc.Driver").newInstance();
             DOMParser dpe = new DOMParser();
             dpe.runParser();
         }
