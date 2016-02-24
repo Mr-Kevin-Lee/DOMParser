@@ -58,8 +58,8 @@ public class DOMParser
 
             //replace with desired XML e.g. actors63.xml
             dom = db.parse("stanford-movies/mains243.xml");
-            dom = db.parse("stanford-movies/actors63.xml");
-            dom = db.parse("stanford-movies/casts124.xml");
+            //dom = db.parse("stanford-movies/actors63.xml");
+            //dom = db.parse("stanford-movies/casts124.xml");
 
         }catch(ParserConfigurationException pce) {
             pce.printStackTrace();
@@ -74,21 +74,22 @@ public class DOMParser
         Element docEle = dom.getDocumentElement();
 
         // Look for parent nodes in document tree
-        NodeList moviesList = docEle.getElementsByTagName("directorfilms");
-        NodeList actorsList = docEle.getElementsByTagName("actor");
-        NodeList castList = docEle.getElementsByTagName("filmc");
+        NodeList moviesList = docEle.getElementsByTagName("film");
+        //NodeList actorsList = docEle.getElementsByTagName("actor");
+        //NodeList castList = docEle.getElementsByTagName("filmc");
 
         if(moviesList != null && moviesList.getLength() > 0) {
             importDataType = "movies";
             addToContentList(moviesList);
-        } else if (actorsList != null && actorsList.getLength() > 0) {
-            importDataType = "actors";
-            addToContentList(actorsList);
         }
-        else {
-            importDataType = "cast";
-            addToContentList(castList);
-        }
+//        else if (actorsList != null && actorsList.getLength() > 0) {
+//            importDataType = "actors";
+//            addToContentList(actorsList);
+//        }
+//        else {
+//            importDataType = "cast";
+//            addToContentList(castList);
+//        }
     }
 
     private void addToContentList(NodeList parentList) {
@@ -96,46 +97,67 @@ public class DOMParser
             Element el = (Element)parentList.item(i);
             HashMap<String, String> newElement;
             // TODO: replace case contents with actual functions for retrieving tag data
-            switch (importDataType) {
-                case "movies":
-                    newElement = getMovie(el);
-                    break;
-                case "actors":
-                    newElement = getMovie(el);
-                    break;
-                case "cast":
-                    newElement = getMovie(el);
-                    break;
-                default:
-                    newElement = getMovie(el);
-                    break;
+            if (el != null) {
+                switch (importDataType) {
+                    case "movies":
+                        newElement = getMovie(el);
+                        break;
+//                case "actors":
+//                    newElement = getMovie(el);
+//                    break;
+//                case "cast":
+//                    newElement = getMovie(el);
+//                    break;
+                    default:
+                        newElement = getMovie(el);
+                        break;
+                }
+                xmlContent.add(newElement);
             }
-            xmlContent.add(newElement);
         }
+        //System.out.println(xmlContent);
     }
 
-    // todo: instead of returning an "Employee" object, return a hashmap of the values to input
-    // to the DB e.g. {"title": "Blade Runner", "year": "1982", "director" : "Ridley Scott"}
     private HashMap<String, String> getMovie (Element element) {
         HashMap<String, String> movieObject = new HashMap<>();
-        String directorName = getTextValue(element, "dirname");
+        if (element != null) {
+            String filmTitle = getTextValue(element, "t");
+            String releaseYear = getTextValue(element, "year");
+            String directorName = getTextValue(element, "dirn");
+
+            movieObject.put("title", filmTitle);
+            movieObject.put("year", releaseYear);
+            movieObject.put("director", directorName);
+        }
         return movieObject;
     }
 
     private String getTextValue(Element ele, String tagName) {
         String textVal = null;
         NodeList nl = ele.getElementsByTagName(tagName);
-        if(nl != null && nl.getLength() > 0) {
-            Element el = (Element)nl.item(0);
-            textVal = el.getFirstChild().getNodeValue();
+        try {
+            if (nl != null && nl.getLength() > 0) {
+                for (int i = 0; i < nl.getLength(); i++) {
+                    Element el = (Element) nl.item(i);
+                    if (el.getFirstChild() != null) {
+                        textVal = el.getFirstChild().getNodeValue();
+                    }
+                }
+            }
         }
-
+        catch (NullPointerException ex) {
+            System.out.println(ex);
+        }
         return textVal;
     }
 
     private int getIntValue(Element ele, String tagName) {
         //in production application you would catch the exception
-        return Integer.parseInt(getTextValue(ele,tagName));
+        String textValue = getTextValue(ele, tagName);
+        if (textValue != null)
+            return Integer.parseInt(textValue);
+        else
+            return -1;
     }
 
     public static void main(String[] args){
