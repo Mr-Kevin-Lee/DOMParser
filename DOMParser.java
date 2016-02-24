@@ -20,6 +20,7 @@ import java.util.HashMap;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Result;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -77,12 +78,20 @@ public class DOMParser
 
         // Look for parent nodes in document tree
         NodeList moviesList = docEle.getElementsByTagName("film");
-        //NodeList actorsList = docEle.getElementsByTagName("actor");
-        //NodeList castList = docEle.getElementsByTagName("filmc");
+        NodeList actorsList = docEle.getElementsByTagName("actor");
+        NodeList castList = docEle.getElementsByTagName("filmc");
 
         if(moviesList != null && moviesList.getLength() > 0) {
             importDataType = "movies";
             addToContentList(moviesList);
+        }
+        else if (actorsList != null && actorsList.getLength() > 0) {
+            importDataType = "actors";
+            addToContentList(actorsList);
+        }
+        else if (castList != null && castList.getLength() > 0){
+            importDataType = "cast";
+            addToContentList(castList);
         }
     }
 
@@ -96,6 +105,9 @@ public class DOMParser
                     case "movies":
                         newElement = getMovie(el);
                         break;
+/*                    case "cast":
+                        newElement = getActor(el);
+                        break;*/
                     default:
                         newElement = getMovie(el);
                         break;
@@ -103,7 +115,6 @@ public class DOMParser
                 xmlContent.add(newElement);
             }
         }
-        System.out.println(xmlContent);
     }
 
     private HashMap<String, String> getMovie (Element element) {
@@ -112,10 +123,12 @@ public class DOMParser
             String filmTitle = getTextValue(element, "t");
             String releaseYear = getTextValue(element, "year");
             String directorName = getTextValue(element, "dirn");
+            String genre = getTextValue(element, "cat");
 
             movieObject.put("title", filmTitle);
             movieObject.put("year", releaseYear);
             movieObject.put("director", directorName);
+            movieObject.put("genre", genre);
         }
         return movieObject;
     }
@@ -146,22 +159,40 @@ public class DOMParser
                         "INSERT INTO movies (title, year, director) " +
                                 "VALUES (?, ?, ?)"
                 );
+
+                String selectGenreString = (
+                        "SELECT id FROM genres " +
+                                "WHERE name = ? "
+                );
+
                 // iterate through xmlContent
                 for (int i = 0; i < xmlContent.size(); i++) {
                     try {
-                        PreparedStatement insertFilm = connection.prepareStatement(insertString);
+                        PreparedStatement insertFilmStatement = connection.prepareStatement(insertString);
+                        PreparedStatement selectGenreStatement = connection.prepareStatement(selectGenreString);
 
                         HashMap<String, String> filmItem = (HashMap<String, String>) (xmlContent.get(i));
                         String title = filmItem.get("title");
                         String year = filmItem.get("year");
                         String director = filmItem.get("director");
+                        String genre = filmItem.get("genre");
+                        int genreID = -1;
+
+/*                        if (genre != null) {
+                            selectGenreStatement.setString(1, genre);
+                            ResultSet result = selectGenreStatement.executeQuery();
+                            if (result.next()) {
+                                genreID = result.getInt(1);
+                            }
+                        }*/
 
                         if (title != null && director != null && year != null && tryParseInt(year)) {
-                            insertFilm.setString(1, title);
-                            insertFilm.setString(2, year);
-                            insertFilm.setString(3, director);
+                            insertFilmStatement.setString(1, title);
+                            insertFilmStatement.setString(2, year);
+                            insertFilmStatement.setString(3, director);
 
-                            insertFilm.executeUpdate();
+                            insertFilmStatement.executeUpdate();
+                            System.out.println("Added movie: " + title);
                         }
                     }
                     catch (SQLException e) {
