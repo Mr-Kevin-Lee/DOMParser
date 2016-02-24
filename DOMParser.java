@@ -150,11 +150,10 @@ public class DOMParser
                     // iterate through xmlContent
                     for (int i = 0; i < xmlContent.size(); i++) {
                         PreparedStatement insertFilm = connection.prepareStatement(insertString);
-//                        HashMap<String, String> filmItem = xmlContent.get(i);
-/*                    insertFilm.setString(0, xmlContent.get(i)["title"]);
-                    insertFilm.setString(1, xmlContent.get(i)["year"]);
-                    insertFilm.setString(2, xmlContent.get(i)["director"]);*/
-                        System.out.println(insertFilm);
+                        HashMap<String, String> filmItem = (HashMap<String, String>) (xmlContent.get(i));
+                        insertFilm.setString(1, filmItem.get("title"));
+                        insertFilm.setString(2, filmItem.get("year"));
+                        insertFilm.setString(3, filmItem.get("director"));
                     }
                     break;
                 default:
