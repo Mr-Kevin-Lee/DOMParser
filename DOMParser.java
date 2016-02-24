@@ -140,28 +140,46 @@ public class DOMParser
     }
 
     public void addToDatabase() {
-        try {
-            switch (importDataType) {
-                case "movies":
-                    String insertString = (
-                            "INSERT INTO movies (title, year, director) " +
-                                    "VALUES (?, ?, ?)"
-                    );
-                    // iterate through xmlContent
-                    for (int i = 0; i < xmlContent.size(); i++) {
+        switch (importDataType) {
+            case "movies":
+                String insertString = (
+                        "INSERT INTO movies (title, year, director) " +
+                                "VALUES (?, ?, ?)"
+                );
+                // iterate through xmlContent
+                for (int i = 0; i < xmlContent.size(); i++) {
+                    try {
                         PreparedStatement insertFilm = connection.prepareStatement(insertString);
+
                         HashMap<String, String> filmItem = (HashMap<String, String>) (xmlContent.get(i));
-                        insertFilm.setString(1, filmItem.get("title"));
-                        insertFilm.setString(2, filmItem.get("year"));
-                        insertFilm.setString(3, filmItem.get("director"));
+                        String title = filmItem.get("title");
+                        String year = filmItem.get("year");
+                        String director = filmItem.get("director");
+
+                        if (title != null && director != null && year != null && tryParseInt(year)) {
+                            insertFilm.setString(1, title);
+                            insertFilm.setString(2, year);
+                            insertFilm.setString(3, director);
+
+                            insertFilm.executeUpdate();
+                        }
                     }
-                    break;
-                default:
-                    break;
-            }
+                    catch (SQLException e) {
+                        System.out.println(e);
+                    }
+                }
+                break;
+            default:
+                break;
         }
-        catch (SQLException e) {
-            System.out.println(e);
+    }
+
+    boolean tryParseInt(String value) {
+        try {
+            Integer.parseInt(value);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
 
