@@ -5,22 +5,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 
-import java.net.*;
-import java.text.*;
-import javax.naming.InitialContext;
-import javax.naming.Context;
-import javax.sql.DataSource;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.HashMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Result;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -115,6 +107,7 @@ public class DOMParser
                 xmlContent.add(newElement);
             }
         }
+        //System.out.println(xmlContent.size());
     }
 
     private HashMap<String, String> getMovie (Element element) {
@@ -155,7 +148,7 @@ public class DOMParser
     public void addToDatabase() {
         switch (importDataType) {
             case "movies":
-                String insertString = (
+                String insertFilmString = (
                         "INSERT INTO movies (title, year, director) " +
                                 "VALUES (?, ?, ?)"
                 );
@@ -165,11 +158,22 @@ public class DOMParser
                                 "WHERE name = ? "
                 );
 
+                String insertGenreString = (
+                        "INSERT INTO genres (name) " +
+                                "VALUES (?)"
+                );
+
+                String insertGenresMoviesString = (
+                        "INSERT INTO genres_in_movies (genre_id, movie_id) " +
+                                "VALUES(?, ?)"
+                );
+
                 // iterate through xmlContent
                 for (int i = 0; i < xmlContent.size(); i++) {
                     try {
-                        PreparedStatement insertFilmStatement = connection.prepareStatement(insertString);
+                        PreparedStatement insertFilmStatement = connection.prepareStatement(insertFilmString);
                         PreparedStatement selectGenreStatement = connection.prepareStatement(selectGenreString);
+                        PreparedStatement insertGenresMoviesStatement = connection.prepareStatement(insertGenresMoviesString);
 
                         HashMap<String, String> filmItem = (HashMap<String, String>) (xmlContent.get(i));
                         String title = filmItem.get("title");
@@ -178,22 +182,50 @@ public class DOMParser
                         String genre = filmItem.get("genre");
                         int genreID = -1;
 
-/*                        if (genre != null) {
-                            selectGenreStatement.setString(1, genre);
-                            ResultSet result = selectGenreStatement.executeQuery();
-                            if (result.next()) {
-                                genreID = result.getInt(1);
-                            }
-                        }*/
-
                         if (title != null && director != null && year != null && tryParseInt(year)) {
+
                             insertFilmStatement.setString(1, title);
                             insertFilmStatement.setString(2, year);
                             insertFilmStatement.setString(3, director);
 
                             insertFilmStatement.executeUpdate();
-                            System.out.println("Added movie: " + title);
+
+                            ResultSet insertFilmID = insertFilmStatement.executeQuery("select last_insert_id()");
+                            insertFilmID.next();
+                            int filmID = insertFilmID.getInt(1);
+
+                            if (genre != null) {
+                                // Check for existing genre and update ID
+                                selectGenreStatement.setString(1, genre);
+                                ResultSet result = selectGenreStatement.executeQuery();
+                                while(result.next()) {
+                                    genreID = result.getInt(1);
+                                }
+                                try { if (result != null) result.close(); }
+                                catch (Exception e) { System.out.println(e) }
+
+                                // Add new genre to DB and retrieve ID
+                                if (genreID == -1) {
+                                    PreparedStatement insertGenreStatement = connection.prepareStatement(insertGenreString);
+                                    insertGenreStatement.setString(1, genre);
+                                    insertGenreStatement.executeUpdate();
+
+                                    ResultSet lastInsertID = insertGenreStatement.executeQuery("select last_insert_id()");
+                                    lastInsertID.next();
+                                    genreID = lastInsertID.getInt(1);
+                                }
+
+                                // Insert movie and genre into genres_in_movies
+                                insertGenresMoviesStatement.setInt(1, genreID);
+                                insertGenresMoviesStatement.setInt(2, filmID);
+                                insertFilmStatement.executeUpdate();
+                            }
+
+                            //System.out.println("Added movie: " + title);
                         }
+
+                        try { if (insertFilmStatement != null) insertFilmStatement.close(); } catch (Exception e) {}
+                        try { if (selectGenreStatement != null) selectGenreStatement.close(); } catch (Exception e) {}
                     }
                     catch (SQLException e) {
                         System.out.println(e);
