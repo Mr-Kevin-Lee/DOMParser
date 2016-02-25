@@ -52,8 +52,8 @@ public class DOMParser
             DocumentBuilder db = dbf.newDocumentBuilder();
 
             //replace with desired XML e.g. actors63.xml
-            dom = db.parse("stanford-movies/mains243.xml");
-            //dom = db.parse("stanford-movies/actors63.xml");
+            //dom = db.parse("stanford-movies/mains243.xml");
+            dom = db.parse("stanford-movies/actors63.xml");
             //dom = db.parse("stanford-movies/casts124.xml");
 
         }catch(ParserConfigurationException pce) {
@@ -97,6 +97,9 @@ public class DOMParser
                     case "movies":
                         newElement = getMovie(el);
                         break;
+                    case "actors":
+                        newElement = getActor(el);
+                        break;
 /*                    case "cast":
                         newElement = getActor(el);
                         break;*/
@@ -124,6 +127,28 @@ public class DOMParser
             movieObject.put("genre", genre);
         }
         return movieObject;
+    }
+
+    private HashMap<String, String> getActor(Element element) {
+        HashMap<String, String> actorObject = new HashMap<>();
+        if (element != null) {
+            String stageName = getTextValue(element, "stagename");
+            String birthyear = getTextValue(element, "dob");
+
+            String[] names = stageName.split(" ");
+            String firstName = names[0];
+            String lastName = names[1];
+
+            String dob = "January 01, " + birthyear;
+/*            DateFormat format = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH);
+            Date date = format.parse(string);
+            System.out.println(date); // Sat Jan 02 00:00:00 GMT 2010*/
+
+            actorObject.put("first_name", firstName);
+            actorObject.put("last_name", lastName);
+            actorObject.put("dob", dob);
+        }
+        return actorObject;
     }
 
     private String getTextValue(Element ele, String tagName) {
@@ -202,7 +227,7 @@ public class DOMParser
                                     genreID = result.getInt(1);
                                 }
                                 try { if (result != null) result.close(); }
-                                catch (Exception e) { System.out.println(e) }
+                                catch (Exception e) { System.out.println(e); }
 
                                 // Add new genre to DB and retrieve ID
                                 if (genreID == -1) {
