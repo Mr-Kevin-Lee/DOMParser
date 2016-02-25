@@ -1,9 +1,6 @@
 import java.sql.*;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
-import java.sql.ResultSetMetaData;
-import java.sql.Statement;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,7 +34,7 @@ public class DOMParser
             connection = DriverManager.getConnection("jdbc:mysql:///moviedb", "root", "122b");
             parseXmlFile();
             parseDocument();
-            //addToDatabase();
+            addToDatabase();
         }
         catch (SQLException e) {
             System.out.println(e);
@@ -91,7 +88,7 @@ public class DOMParser
         for(int i = 0 ; i < parentList.getLength();i++) {
             Element el = (Element)parentList.item(i);
             HashMap<String, String> newElement;
-            // TODO: replace case contents with actual functions for retrieving tag data
+
             if (el != null) {
                 switch (importDataType) {
                     case "movies":
@@ -137,20 +134,16 @@ public class DOMParser
 
             String[] names = stageName.split(" ");
             String firstName = "";
-            String lastName = "";
             if (names.length != 1) {
                 firstName = names[names.length - 2];
             }
-            lastName = names[names.length - 1];
+            String lastName = names[names.length - 1];
 
             String dob = "";
             if (birthyear != null)
                 dob = "01/01/" + birthyear;
             else
                 dob = null;
-/*            DateFormat format = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH);
-            Date date = format.parse(string);
-            System.out.println(date); // Sat Jan 02 00:00:00 GMT 2010*/
 
             actorObject.put("first_name", firstName);
             actorObject.put("last_name", lastName);
@@ -267,6 +260,10 @@ public class DOMParser
                 }
                 break;
             case "actors":
+                String insertActorString = (
+                        "INSERT INTO stars(first_name, last_name, dob) " +
+                                "VALUES(?, ?, ?)"
+                );
                 for (int i = 0; i < xmlContent.size(); i++) {
                     try {
                         HashMap<String, String> actorMap = (HashMap<String, String>) (xmlContent.get(i));
@@ -274,6 +271,11 @@ public class DOMParser
                         String last_name = actorMap.get("last_name");
                         String dob = actorMap.get("dob");
 
+                        PreparedStatement insertActorStatement = connection.prepareStatement(insertActorString);
+                        insertActorStatement.setString(1, first_name);
+                        insertActorStatement.setString(2, last_name);
+                        insertActorStatement.setString(3, dob);
+                        insertActorStatement.executeUpdate();
                     } catch (Exception e) {
                         System.out.println(e);
                     }
