@@ -141,7 +141,7 @@ public class DOMParser
 
             String dob = "";
             if (birthyear != null)
-                dob = "01/01/" + birthyear;
+                dob = birthyear + "/01/01";
             else
                 dob = null;
 
@@ -149,7 +149,6 @@ public class DOMParser
             actorObject.put("last_name", lastName);
             actorObject.put("dob", dob);
         }
-        System.out.println(actorObject);
         return actorObject;
     }
 
@@ -291,6 +290,18 @@ public class DOMParser
             Integer.parseInt(value);
             return true;
         } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    boolean tryParseDate(String dateString)
+    {
+        try
+        {
+            SimpleDateFormat("yyyy-MM-dd").parse(dateString);
+            return true;
+        }
+        catch (Exception e) {
             return false;
         }
     }
