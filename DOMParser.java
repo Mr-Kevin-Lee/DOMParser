@@ -1,20 +1,19 @@
 import java.sql.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-
+import java.util.Date;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import java.text.SimpleDateFormat;
 
 public class DOMParser
 {
@@ -134,16 +133,13 @@ public class DOMParser
 
             String[] names = stageName.split(" ");
             String firstName = "";
-            if (names.length != 1) {
+            if (names.length != 1)
                 firstName = names[names.length - 2];
-            }
             String lastName = names[names.length - 1];
 
-            String dob = "";
-            if (birthyear != null)
+            String dob = null;
+            if (birthyear != null && tryParseDate(birthyear + "/01/01"))
                 dob = birthyear + "/01/01";
-            else
-                dob = null;
 
             actorObject.put("first_name", firstName);
             actorObject.put("last_name", lastName);
@@ -275,7 +271,8 @@ public class DOMParser
                         insertActorStatement.setString(2, last_name);
                         insertActorStatement.setString(3, dob);
                         insertActorStatement.executeUpdate();
-                    } catch (Exception e) {
+                        System.out.println("Inserted: " + first_name + " " + last_name);
+                    } catch (SQLException e) {
                         System.out.println(e);
                     }
                 }
@@ -298,12 +295,30 @@ public class DOMParser
     {
         try
         {
-            SimpleDateFormat("yyyy-MM-dd").parse(dateString);
+            Date df = new SimpleDateFormat("yyyy/MM/dd").parse(dateString);
             return true;
         }
         catch (Exception e) {
             return false;
         }
+
+/*        DateFormat format =
+                DateFormat.getDateTimeInstance(
+                        DateFormat.MEDIUM, DateFormat.SHORT);
+
+        // Parse the date
+        try {
+            Date date = format.parse(dateString);
+            System.out.println("Original string: " + dateString);
+            System.out.println("Parsed date    : " +
+                    date.toString());
+            return true;
+        }
+        catch(ParseException pe) {
+            System.out.println("ERROR: could not parse date in string \"" +
+                    dateString + "\"");
+            return false;
+        }*/
     }
 
     public static void main(String[] args){
