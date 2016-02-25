@@ -37,7 +37,7 @@ public class DOMParser
             connection = DriverManager.getConnection("jdbc:mysql:///moviedb", "root", "122b");
             parseXmlFile();
             parseDocument();
-            addToDatabase();
+            //addToDatabase();
         }
         catch (SQLException e) {
             System.out.println(e);
@@ -110,7 +110,7 @@ public class DOMParser
                 xmlContent.add(newElement);
             }
         }
-        //System.out.println(xmlContent.size());
+//        System.out.println(xmlContent);
     }
 
     private HashMap<String, String> getMovie (Element element) {
@@ -136,10 +136,18 @@ public class DOMParser
             String birthyear = getTextValue(element, "dob");
 
             String[] names = stageName.split(" ");
-            String firstName = names[0];
-            String lastName = names[1];
+            String firstName = "";
+            String lastName = "";
+            if (names.length != 1) {
+                firstName = names[names.length - 2];
+            }
+            lastName = names[names.length - 1];
 
-            String dob = "January 01, " + birthyear;
+            String dob = "";
+            if (birthyear != null)
+                dob = "01/01/" + birthyear;
+            else
+                dob = null;
 /*            DateFormat format = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH);
             Date date = format.parse(string);
             System.out.println(date); // Sat Jan 02 00:00:00 GMT 2010*/
@@ -148,6 +156,7 @@ public class DOMParser
             actorObject.put("last_name", lastName);
             actorObject.put("dob", dob);
         }
+        System.out.println(actorObject);
         return actorObject;
     }
 
@@ -253,6 +262,19 @@ public class DOMParser
                         try { if (selectGenreStatement != null) selectGenreStatement.close(); } catch (Exception e) {}
                     }
                     catch (SQLException e) {
+                        System.out.println(e);
+                    }
+                }
+                break;
+            case "actors":
+                for (int i = 0; i < xmlContent.size(); i++) {
+                    try {
+                        HashMap<String, String> actorMap = (HashMap<String, String>) (xmlContent.get(i));
+                        String first_name = actorMap.get("first_name");
+                        String last_name = actorMap.get("last_name");
+                        String dob = actorMap.get("dob");
+
+                    } catch (Exception e) {
                         System.out.println(e);
                     }
                 }
