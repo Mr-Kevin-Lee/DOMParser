@@ -33,7 +33,7 @@ public class DOMParser
             connection = DriverManager.getConnection("jdbc:mysql:///moviedb", "root", "122b");
             parseXmlFile();
             parseDocument();
-            //addToDatabase();
+            addToDatabase();
         }
         catch (SQLException e) {
             System.out.println(e);
@@ -106,7 +106,7 @@ public class DOMParser
                 xmlContent.add(newElement);
             }
         }
-        System.out.println(xmlContent);
+//        System.out.println(xmlContent);
     }
 
     private HashMap<String, String> getMovie (Element element) {
@@ -165,8 +165,8 @@ public class DOMParser
                 }
 
 
-                castObject.put("firstName", firstName);
-                castObject.put("lastName", lastName);
+                castObject.put("first_name", firstName);
+                castObject.put("last_name", lastName);
                 castObject.put("film", movieTitle);
             }
         }
@@ -299,7 +299,51 @@ public class DOMParser
                         insertActorStatement.setString(2, last_name);
                         insertActorStatement.setString(3, dob);
                         insertActorStatement.executeUpdate();
-                        System.out.println("Inserted: " + first_name + " " + last_name);
+                        //System.out.println("Inserted: " + first_name + " " + last_name);
+                    } catch (SQLException e) {
+                        System.out.println(e);
+                    }
+                }
+                break;
+            case "cast":
+                String selectMovieString = (
+                        "SELECT id FROM movies WHERE title = ?"
+                );
+                String selectActorString = (
+                        "SELECT id FROM stars WHERE first_name = ? AND last_name = ?"
+                );
+                String insertCastString = (
+                        "INSERT INTO stars_in_movies(star_id, movie_id) " +
+                                "VALUES(?, ?)"
+                );
+
+                for (int i = 0; i < xmlContent.size(); i++) {
+                    try {
+                        HashMap<String, String> actorMap = (HashMap<String, String>) (xmlContent.get(i));
+                        String first_name = actorMap.get("first_name");
+                        String last_name = actorMap.get("last_name");
+                        String film = actorMap.get("film");
+
+                        PreparedStatement selectMovieStatement = connection.prepareStatement(selectMovieString);
+                        selectMovieStatement.setString(1, film);
+                        ResultSet movieSet = selectMovieStatement.executeQuery();
+                        movieSet.next();
+                        int movieID = movieSet.getInt(1);
+
+                        PreparedStatement selectActorStatement = connection.prepareStatement(selectActorString);
+                        selectActorStatement.setString(1, first_name);
+                        selectActorStatement.setString(2, last_name);
+                        ResultSet actorSet = selectActorStatement.executeQuery();
+                        actorSet.next();
+                        int actorID = actorSet.getInt(1);
+
+                        PreparedStatement insertCastStatement = connection.prepareStatement(insertCastString);
+                        insertCastStatement.setInt(1, actorID);
+                        insertCastStatement.setInt(2, movieID);
+                        insertCastStatement.executeUpdate();
+
+                        System.out.println("star: " + actorID + "," + "movie: " + movieID);
+
                     } catch (SQLException e) {
                         System.out.println(e);
                     }
