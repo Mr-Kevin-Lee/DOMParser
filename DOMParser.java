@@ -33,7 +33,7 @@ public class DOMParser
             connection = DriverManager.getConnection("jdbc:mysql:///moviedb", "root", "122b");
             parseXmlFile();
             parseDocument();
-            addToDatabase();
+            //addToDatabase();
         }
         catch (SQLException e) {
             System.out.println(e);
@@ -48,9 +48,9 @@ public class DOMParser
             DocumentBuilder db = dbf.newDocumentBuilder();
 
             //replace with desired XML e.g. actors63.xml
-            dom = db.parse("stanford-movies/mains243.xml");
+//            dom = db.parse("stanford-movies/mains243.xml");
 //            dom = db.parse("stanford-movies/actors63.xml");
-            //dom = db.parse("stanford-movies/casts124.xml");
+            dom = db.parse("stanford-movies/casts124.xml");
 
         }catch(ParserConfigurationException pce) {
             pce.printStackTrace();
@@ -67,7 +67,7 @@ public class DOMParser
         // Look for parent nodes in document tree
         NodeList moviesList = docEle.getElementsByTagName("film");
         NodeList actorsList = docEle.getElementsByTagName("actor");
-        NodeList castList = docEle.getElementsByTagName("filmc");
+        NodeList castList = docEle.getElementsByTagName("m");
 
         if(moviesList != null && moviesList.getLength() > 0) {
             importDataType = "movies";
@@ -96,6 +96,9 @@ public class DOMParser
                     case "actors":
                         newElement = getActor(el);
                         break;
+                    case "cast":
+                        newElement = getCast(el);
+                        break;
                     default:
                         newElement = getMovie(el);
                         break;
@@ -103,7 +106,7 @@ public class DOMParser
                 xmlContent.add(newElement);
             }
         }
-//        System.out.println(xmlContent);
+        System.out.println(xmlContent);
     }
 
     private HashMap<String, String> getMovie (Element element) {
@@ -143,6 +146,34 @@ public class DOMParser
             actorObject.put("dob", dob);
         }
         return actorObject;
+    }
+
+    private HashMap<String, String> getCast(Element element) {
+        HashMap<String, String> castObject = new HashMap<>();
+        try {
+            if (element != null) {
+                String movieTitle = getTextValue(element, "t");
+                String stageName = getTextValue(element, "a");
+
+                String firstName = "";
+                String lastName = "";
+                if (stageName != null) {
+                    String[] names = stageName.split(" ");
+                    if (names.length != 1)
+                        firstName = names[names.length - 2];
+                    lastName = names[names.length - 1];
+                }
+
+
+                castObject.put("firstName", firstName);
+                castObject.put("lastName", lastName);
+                castObject.put("film", movieTitle);
+            }
+        }
+        catch (NullPointerException ex) {
+            System.out.println(ex);
+        }
+        return castObject;
     }
 
     private String getTextValue(Element ele, String tagName) {
@@ -298,24 +329,6 @@ public class DOMParser
         catch (Exception e) {
             return false;
         }
-
-/*        DateFormat format =
-                DateFormat.getDateTimeInstance(
-                        DateFormat.MEDIUM, DateFormat.SHORT);
-
-        // Parse the date
-        try {
-            Date date = format.parse(dateString);
-            System.out.println("Original string: " + dateString);
-            System.out.println("Parsed date    : " +
-                    date.toString());
-            return true;
-        }
-        catch(ParseException pe) {
-            System.out.println("ERROR: could not parse date in string \"" +
-                    dateString + "\"");
-            return false;
-        }*/
     }
 
     public static void main(String[] args){
