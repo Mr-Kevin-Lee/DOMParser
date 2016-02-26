@@ -48,8 +48,8 @@ public class DOMParser
             DocumentBuilder db = dbf.newDocumentBuilder();
 
             //replace with desired XML e.g. actors63.xml
-            //dom = db.parse("stanford-movies/mains243.xml");
-            dom = db.parse("stanford-movies/actors63.xml");
+            dom = db.parse("stanford-movies/mains243.xml");
+//            dom = db.parse("stanford-movies/actors63.xml");
             //dom = db.parse("stanford-movies/casts124.xml");
 
         }catch(ParserConfigurationException pce) {
@@ -96,9 +96,6 @@ public class DOMParser
                     case "actors":
                         newElement = getActor(el);
                         break;
-/*                    case "cast":
-                        newElement = getActor(el);
-                        break;*/
                     default:
                         newElement = getMovie(el);
                         break;
@@ -240,7 +237,7 @@ public class DOMParser
                                 // Insert movie and genre into genres_in_movies
                                 insertGenresMoviesStatement.setInt(1, genreID);
                                 insertGenresMoviesStatement.setInt(2, filmID);
-                                insertFilmStatement.executeUpdate();
+                                insertGenresMoviesStatement.executeUpdate();
                             }
 
                             //System.out.println("Added movie: " + title);
