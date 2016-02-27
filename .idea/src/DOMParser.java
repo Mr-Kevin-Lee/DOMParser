@@ -19,6 +19,7 @@ public class DOMParser
 {
     //No generics
     List xmlContent;
+    HashMap<String, String[]> castMap = new HashMap<String, String[]>();
     Document dom;
     String importDataType = "";
     private static Connection connection = null;
@@ -149,21 +150,14 @@ public class DOMParser
     }
 
     private HashMap<String, String> getCast(Element element) {
-        HashMap<String, String> castObject = new HashMap<>();
         try {
             if (element != null) {
                 String movieTitle = getTextValue(element, "t");
                 String stageName = getTextValue(element, "a");
 
-                String firstName = "";
-                String lastName = "";
-                if (stageName != null) {
-                    String[] names = stageName.split(" ");
-                    if (names.length != 1)
-                        firstName = names[names.length - 2];
-                    lastName = names[names.length - 1];
-                }
-
+                String[] filmCast = castMap.get(movieTitle);
+                if (filmCast == null)
+                    filmCast = [];
 
                 castObject.put("first_name", firstName);
                 castObject.put("last_name", lastName);
