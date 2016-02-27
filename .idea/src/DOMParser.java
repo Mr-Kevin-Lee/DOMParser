@@ -1,11 +1,8 @@
 import java.sql.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.Date;
+import java.util.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.HashMap;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -14,12 +11,13 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class DOMParser
 {
     //No generics
     List xmlContent;
-    HashMap<String, String[]> castMap = new HashMap<String, String[]>();
+    HashMap<String, ArrayList<String>> castMap = new HashMap<String, ArrayList<String>>();
     Document dom;
     String importDataType = "";
     private static Connection connection = null;
@@ -35,6 +33,7 @@ public class DOMParser
             parseXmlFile();
             parseDocument();
             addToDatabase();
+            connection.close();
         }
         catch (SQLException e) {
             System.out.println(e);
@@ -93,18 +92,19 @@ public class DOMParser
                 switch (importDataType) {
                     case "movies":
                         newElement = getMovie(el);
+                        xmlContent.add(newElement);
                         break;
                     case "actors":
                         newElement = getActor(el);
+                        xmlContent.add(newElement);
                         break;
                     case "cast":
-                        newElement = getCast(el);
+                        getCast(el);
                         break;
                     default:
                         newElement = getMovie(el);
                         break;
                 }
-                xmlContent.add(newElement);
             }
         }
 //        System.out.println(xmlContent);
@@ -149,25 +149,23 @@ public class DOMParser
         return actorObject;
     }
 
-    private HashMap<String, String> getCast(Element element) {
+    private void getCast(Element element) {
         try {
             if (element != null) {
                 String movieTitle = getTextValue(element, "t");
                 String stageName = getTextValue(element, "a");
 
-                String[] filmCast = castMap.get(movieTitle);
+                ArrayList<String> filmCast = castMap.get(movieTitle);
                 if (filmCast == null)
-                    filmCast = [];
+                    filmCast = new ArrayList<String>();
 
-                castObject.put("first_name", firstName);
-                castObject.put("last_name", lastName);
-                castObject.put("film", movieTitle);
+                filmCast.add(stageName);
+                castMap.put(movieTitle, filmCast);
             }
         }
         catch (NullPointerException ex) {
             System.out.println(ex);
         }
-        return castObject;
     }
 
     private String getTextValue(Element ele, String tagName) {
@@ -270,6 +268,7 @@ public class DOMParser
 
                         try { if (insertFilmStatement != null) insertFilmStatement.close(); } catch (Exception e) {}
                         try { if (selectGenreStatement != null) selectGenreStatement.close(); } catch (Exception e) {}
+                        try { if (insertGenresMoviesStatement != null) insertGenresMoviesStatement.close(); } catch (Exception e) {}
                     }
                     catch (SQLException e) {
                         System.out.println(e);
@@ -294,6 +293,8 @@ public class DOMParser
                         insertActorStatement.setString(3, dob);
                         insertActorStatement.executeUpdate();
                         //System.out.println("Inserted: " + first_name + " " + last_name);
+
+                        try { if (insertActorStatement != null) insertActorStatement.close(); } catch (Exception e) {}
                     } catch (SQLException e) {
                         System.out.println(e);
                     }
@@ -311,32 +312,48 @@ public class DOMParser
                                 "VALUES(?, ?)"
                 );
 
-                for (int i = 0; i < xmlContent.size(); i++) {
+                for (Map.Entry<String, ArrayList<String>> entry : castMap.entrySet()) {
                     try {
-                        HashMap<String, String> actorMap = (HashMap<String, String>) (xmlContent.get(i));
-                        String first_name = actorMap.get("first_name");
-                        String last_name = actorMap.get("last_name");
-                        String film = actorMap.get("film");
+                        String film = entry.getKey();
+                        ArrayList<String> actors = entry.getValue();
 
-                        PreparedStatement selectMovieStatement = connection.prepareStatement(selectMovieString);
-                        selectMovieStatement.setString(1, film);
-                        ResultSet movieSet = selectMovieStatement.executeQuery();
-                        movieSet.next();
-                        int movieID = movieSet.getInt(1);
+                        for (int i = 0; i < actors.size(); i++) {
+                            String stageName = actors.get(i);
+                            String first_name = "";
+                            String last_name = "";
+                            if (stageName != null) {
+                                String[] names = stageName.split(" ");
+                                if (names.length != 1)
+                                    first_name = names[names.length - 2];
+                                last_name = names[names.length - 1];
+                            }
 
-                        PreparedStatement selectActorStatement = connection.prepareStatement(selectActorString);
-                        selectActorStatement.setString(1, first_name);
-                        selectActorStatement.setString(2, last_name);
-                        ResultSet actorSet = selectActorStatement.executeQuery();
-                        actorSet.next();
-                        int actorID = actorSet.getInt(1);
+                            PreparedStatement selectMovieStatement = connection.prepareStatement(selectMovieString);
+                            selectMovieStatement.setString(1, film);
+                            ResultSet movieSet = selectMovieStatement.executeQuery();
+                            int movieID = -1;
+                            if (movieSet.next())
+                                movieID = movieSet.getInt(1);
 
-                        PreparedStatement insertCastStatement = connection.prepareStatement(insertCastString);
-                        insertCastStatement.setInt(1, actorID);
-                        insertCastStatement.setInt(2, movieID);
-                        insertCastStatement.executeUpdate();
+                            PreparedStatement selectActorStatement = connection.prepareStatement(selectActorString);
+                            selectActorStatement.setString(1, first_name);
+                            selectActorStatement.setString(2, last_name);
+                            ResultSet actorSet = selectActorStatement.executeQuery();
+                            int actorID = -1;
+                            if (actorSet.next())
+                                actorID = actorSet.getInt(1);
 
-                        System.out.println("star: " + actorID + "," + "movie: " + movieID);
+                            PreparedStatement insertCastStatement = connection.prepareStatement(insertCastString);
+                            if (movieID != -1 && actorID != -1) {
+                                insertCastStatement.setInt(1, actorID);
+                                insertCastStatement.setInt(2, movieID);
+                                insertCastStatement.executeUpdate();
+                            }
+
+                            try { if (selectMovieStatement != null) selectMovieStatement.close(); } catch (Exception e) {}
+                            try { if (selectActorStatement != null) selectActorStatement.close(); } catch (Exception e) {}
+                            try { if (insertCastStatement != null) insertCastStatement.close(); } catch (Exception e) {}
+                        }
 
                     } catch (SQLException e) {
                         System.out.println(e);
