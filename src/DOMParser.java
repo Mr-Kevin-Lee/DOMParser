@@ -46,11 +46,6 @@ public class DOMParser
         try {
             DocumentBuilder db = dbf.newDocumentBuilder();
             return db.parse(filePath);
-
-            //replace with desired XML e.g. actors63.xml
-//            dom = db.parse("stanford-movies/mains243.xml");
-//            dom = db.parse("stanford-movies/actors63.xml");
-
         }catch(ParserConfigurationException pce) {
             pce.printStackTrace();
         }catch(SAXException se) {
@@ -68,7 +63,7 @@ public class DOMParser
         // Look for parent nodes in document tree
         NodeList moviesList = docEle.getElementsByTagName("film");
         NodeList actorsList = docEle.getElementsByTagName("actor");
-        NodeList castList = docEle.getElementsByTagName("m");
+        NodeList castList = docEle.getElementsByTagName("filmc");
 
         if(moviesList != null && moviesList.getLength() > 0) {
             importDataType = "movies";
@@ -88,20 +83,20 @@ public class DOMParser
     private void addToContentList(NodeList parentList, String importDataType) {
         for(int i = 0 ; i < parentList.getLength();i++) {
             Element el = (Element)parentList.item(i);
-            HashMap<String, String> newElement;
 
             if (el != null) {
                 switch (importDataType) {
                     case "movies":
-                        newElement = getMovie(el);
-                        xmlContent.add(newElement);
+                        Film film = getMovie(el);
+                        xmlContent.add(film);
                         break;
                     case "actors":
-                        newElement = getActor(el);
-                        xmlContent.add(newElement);
+                        Actor actor = getActor(el);
+                        xmlContent.add(actor);
                         break;
                     case "cast":
-                        getCast(el);
+                        Cast cast = getCast(el);
+                        xmlContent.add(cast);
                         break;
                     default:
                         break;
@@ -111,24 +106,20 @@ public class DOMParser
 //        System.out.println(xmlContent);
     }
 
-    private HashMap<String, String> getMovie (Element element) {
-        HashMap<String, String> movieObject = new HashMap<>();
+    private Film getMovie (Element element) {
         if (element != null) {
             String filmTitle = getTextValue(element, "t");
             String releaseYear = getTextValue(element, "year");
             String directorName = getTextValue(element, "dirn");
             String genre = getTextValue(element, "cat");
 
-            movieObject.put("title", filmTitle);
-            movieObject.put("year", releaseYear);
-            movieObject.put("director", directorName);
-            movieObject.put("genre", genre);
+            Film film = new Film(filmTitle, releaseYear, directorName, genre);
+            return film;
         }
-        return movieObject;
+        return null;
     }
 
-    private HashMap<String, String> getActor(Element element) {
-        HashMap<String, String> actorObject = new HashMap<>();
+    private Actor getActor(Element element) {
         if (element != null) {
             String stageName = getTextValue(element, "stagename");
             String birthyear = getTextValue(element, "dob");
@@ -143,30 +134,27 @@ public class DOMParser
             if (birthyear != null && tryParseDate(birthyear + "/01/01"))
                 dob = birthyear + "/01/01";
 
-            actorObject.put("first_name", firstName);
-            actorObject.put("last_name", lastName);
-            actorObject.put("dob", dob);
+            Actor actor = new Actor(firstName, lastName, dob);
+            return actor;
         }
-        return actorObject;
+        return null;
     }
 
-    private void getCast(Element element) {
-        try {
-            if (element != null) {
-                String movieTitle = getTextValue(element, "t");
-                String stageName = getTextValue(element, "a");
+    private Cast getCast(Element element) {
+        if (element != null) {
+            String movieTitle = getTextValue(element, "t");
+            String stageName = getTextValue(element, "a");
 
-                ArrayList<String> filmCast = castMap.get(movieTitle);
-                if (filmCast == null)
-                    filmCast = new ArrayList<String>();
+            ArrayList<String> filmCast = castMap.get(movieTitle);
+            if (filmCast == null)
+                filmCast = new ArrayList<String>();
 
-                filmCast.add(stageName);
-                castMap.put(movieTitle, filmCast);
-            }
+            filmCast.add(stageName);
+            castMap.put(movieTitle, filmCast);
+            Cast cast = new Cast(movieTitle, stageName);
+            return cast;
         }
-        catch (NullPointerException ex) {
-            System.out.println(ex);
-        }
+        return null;
     }
 
     private String getTextValue(Element ele, String tagName) {
@@ -218,11 +206,11 @@ public class DOMParser
                         PreparedStatement selectGenreStatement = connection.prepareStatement(selectGenreString);
                         PreparedStatement insertGenresMoviesStatement = connection.prepareStatement(insertGenresMoviesString);
 
-                        HashMap<String, String> filmItem = (HashMap<String, String>) (xmlContent.get(i));
-                        String title = filmItem.get("title");
-                        String year = filmItem.get("year");
-                        String director = filmItem.get("director");
-                        String genre = filmItem.get("genre");
+                        Film filmItem = (Film) (xmlContent.get(i));
+                        String title = filmItem.title;
+                        String director = filmItem.director;
+                        String year = filmItem.year;
+                        String genre = filmItem.genre;
                         int genreID = -1;
 
                         if (title != null && director != null && year != null && tryParseInt(year)) {
@@ -283,10 +271,10 @@ public class DOMParser
                 );
                 for (int i = 0; i < xmlContent.size(); i++) {
                     try {
-                        HashMap<String, String> actorMap = (HashMap<String, String>) (xmlContent.get(i));
-                        String first_name = actorMap.get("first_name");
-                        String last_name = actorMap.get("last_name");
-                        String dob = actorMap.get("dob");
+                        Actor actorItem = (Actor) (xmlContent.get(i));
+                        String first_name = actorItem.firstName;
+                        String last_name = actorItem.lastName;
+                        String dob = actorItem.dateOfBirth;
 
                         PreparedStatement insertActorStatement = connection.prepareStatement(insertActorString);
                         insertActorStatement.setString(1, first_name);

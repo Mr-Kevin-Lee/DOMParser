@@ -5,7 +5,7 @@ public class Film {
     public String genre;
 
     public Film(String t, String y, String d, String g) {
-        title = f;
+        title = t;
         year = y;
         director = d;
         genre = g;
