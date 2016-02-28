@@ -227,9 +227,21 @@ public class DOMParser
                             String last_name = "";
                             if (stageName != null) {
                                 String[] names = stageName.split(" ");
-                                if (names.length != 1)
+                                if (names.length != 1) {
                                     first_name = names[names.length - 2];
+                                }
                                 last_name = names[names.length - 1];
+                                String procCall = (
+                                    "CALL `XML_parse_cast`(" +
+                                    "   '" + filmTitle.replace("\\", "").replace("'", "''") + "'," +
+                                    "   '" + first_name.replace("\\", "").replace("'", "''") + "'," +
+                                    "   '" + last_name.replace("\\", "").replace("'", "''") + "'," +
+                                    "   @out_status" +
+                                    ");";
+                                );
+
+                                out.write(procCall.getBytes());
+
                             }
                         }
 
