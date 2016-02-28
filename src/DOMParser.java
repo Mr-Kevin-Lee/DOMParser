@@ -236,7 +236,6 @@ public class DOMParser
                                     "   '" + filmTitle.replace("\\", "").replace("'", "''") + "'," +
                                     "   '" + first_name.replace("\\", "").replace("'", "''") + "'," +
                                     "   '" + last_name.replace("\\", "").replace("'", "''") + "'," +
-                                    "   @out_status" +
                                     ");";
                                 );
 
