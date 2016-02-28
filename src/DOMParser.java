@@ -1,7 +1,6 @@
 import java.sql.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.util.*;
 import java.io.*;
 import java.io.IOException;
@@ -192,9 +191,20 @@ public class DOMParser
                         String director = filmItem.director;
                         String year = filmItem.year;
                         String genre = filmItem.genre;
-                        int genreID = -1;
 
                         if (title != null && director != null && year != null && tryParseInt(year)) {
+                            String procCall = (
+                                    "CALL `XML_parse_movies` (" +
+                                            "'" + title.replace("\\", "").replace("'","''") + "'," +
+                                            "'" + director.replace("\\", "").replace("'","''") + "'," +
+                                            "'" + year + "'," +
+                                            "'" + genre + "'," +
+                                            ");\n"
+                            );
+
+                            out.write(
+                                    procCall.getBytes()
+                            );
                         }
                     }
                     catch (Exception e) {
@@ -209,6 +219,18 @@ public class DOMParser
                         String first_name = actorItem.firstName;
                         String last_name = actorItem.lastName;
                         String dob = actorItem.dateOfBirth;
+
+                        String procCall = (
+                                "CALL `XML_parse_stars` (" +
+                                        "'" + first_name.replace("\\", "").replace("'","''") + "'," +
+                                        "'" + last_name.replace("\\", "").replace("'","''") + "'," +
+                                        "'" + dob + "'," +
+                                        ");\n"
+                                );
+
+                        out.write(
+                          procCall.getBytes()
+                        );
                     } catch (Exception e) {
                         System.out.println(e);
                     }
@@ -271,7 +293,6 @@ public class DOMParser
             for (int i = 0; i < args.length; i++) {
                 String filePath = args[i];
                 out = new FileOutputStream(filePath + ".sql");
-                out.write(filePath.getBytes());
                 System.out.println(filePath);
                 DOMParser dpe = new DOMParser();
                 dpe.runParser(filePath);
