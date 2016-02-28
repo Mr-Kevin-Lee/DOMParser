@@ -9,6 +9,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 import java.text.SimpleDateFormat;
@@ -103,7 +104,7 @@ public class DOMParser
                 }
             }
         }
-//        System.out.println(xmlContent);
+        System.out.println(xmlContent);
     }
 
     private Film getMovie (Element element) {
@@ -143,15 +144,18 @@ public class DOMParser
     private Cast getCast(Element element) {
         if (element != null) {
             String movieTitle = getTextValue(element, "t");
-            String stageName = getTextValue(element, "a");
-
-            ArrayList<String> filmCast = castMap.get(movieTitle);
-            if (filmCast == null)
-                filmCast = new ArrayList<String>();
-
-            filmCast.add(stageName);
-            castMap.put(movieTitle, filmCast);
-            Cast cast = new Cast(movieTitle, stageName);
+            NodeList actors = element.getElementsByTagName("m");
+            Cast cast = new Cast(movieTitle);
+            for (int i = 0; i < actors.getLength(); i++) {
+                try {
+                    Element actorItem = (Element) actors.item(i);
+                    String actorName = getTextValue(actorItem, "a");
+                    cast.addActor(actorName);
+                }
+                catch (NullPointerException ex) {
+                    System.out.println(ex);
+                }
+            }
             return cast;
         }
         return null;
@@ -301,13 +305,14 @@ public class DOMParser
                                 "VALUES(?, ?)"
                 );
 
-                for (Map.Entry<String, ArrayList<String>> entry : castMap.entrySet()) {
+                for (int i = 0; i < xmlContent.size(); i++) {
                     try {
-                        String film = entry.getKey();
-                        ArrayList<String> actors = entry.getValue();
+                        Cast cast = (Cast) xmlContent.get(i);
+                        String filmTitle = cast.filmTitle;
+                        ArrayList<String> actors = cast.castList;
 
-                        for (int i = 0; i < actors.size(); i++) {
-                            String stageName = actors.get(i);
+                        for (int j = 0; i < actors.size(); i++) {
+                            String stageName = actors.get(j);
                             String first_name = "";
                             String last_name = "";
                             if (stageName != null) {
@@ -318,7 +323,7 @@ public class DOMParser
                             }
 
                             PreparedStatement selectMovieStatement = connection.prepareStatement(selectMovieString);
-                            selectMovieStatement.setString(1, film);
+                            selectMovieStatement.setString(1, filmTitle);
                             ResultSet movieSet = selectMovieStatement.executeQuery();
                             int movieID = -1;
                             if (movieSet.next())
