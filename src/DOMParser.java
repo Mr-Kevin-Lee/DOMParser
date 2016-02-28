@@ -257,7 +257,7 @@ public class DOMParser
                                     "CALL `XML_parse_cast`(" +
                                     "   '" + filmTitle.replace("\\", "").replace("'", "''") + "'," +
                                     "   '" + first_name.replace("\\", "").replace("'", "''") + "'," +
-                                    "   '" + last_name.replace("\\", "").replace("'", "''") + "'," +
+                                    "   '" + last_name.replace("\\", "").replace("'", "''") +
                                     ");";
                                 );
 
