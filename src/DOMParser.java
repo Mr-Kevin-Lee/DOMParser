@@ -3,6 +3,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.util.*;
+import java.io.*;
 import java.io.IOException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -21,6 +22,7 @@ public class DOMParser
     List xmlContent;
     HashMap<String, ArrayList<String>> castMap = new HashMap<String, ArrayList<String>>();
     private static Connection connection = null;
+    private static FileOutputStream out = null;
 
     public DOMParser(){
         //create a list to hold the employee objects
@@ -383,12 +385,15 @@ public class DOMParser
     public static void main(String[] args){
         try {
             Class.forName("com.mysql.jdbc.Driver").newInstance();
-
+            System.out.println(args.length);
             for (int i = 0; i < args.length; i++) {
                 String filePath = args[i];
+                out = new FileOutputStream(filePath + ".sql");
+                out.write(filePath.getBytes());
                 System.out.println(filePath);
                 DOMParser dpe = new DOMParser();
                 dpe.runParser(filePath);
+                out.close();
             }
         }
         catch (Exception e) {
